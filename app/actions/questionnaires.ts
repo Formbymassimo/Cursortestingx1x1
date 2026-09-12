@@ -9,11 +9,12 @@ import { createQuestionnaire } from "@/lib/services/questionnaires";
 import { questionnaireDraftSchema } from "@/lib/validation";
 
 export async function createQuestionnaireAction(
-  projectId: string,
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
+  const projectId = field(formData, "projectId");
+  if (!projectId) return { error: "Project is missing." };
   let questionsRaw: unknown = [];
   try {
     questionsRaw = JSON.parse(field(formData, "questions"));

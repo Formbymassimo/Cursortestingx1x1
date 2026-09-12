@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createQuestionnaireAction } from "@/app/actions/questionnaires";
 import { QuestionBuilder } from "@/components/QuestionBuilder";
 import { requireUser } from "@/lib/auth";
 import { getProjectForUser } from "@/lib/services/projects";
@@ -14,8 +13,6 @@ export default async function NewQuestionnairePage({
   const { projectId } = await params;
   const project = await getProjectForUser(projectId, user.id);
   if (!project) notFound();
-
-  const action = createQuestionnaireAction.bind(null, project.id);
 
   return (
     <div>
@@ -32,10 +29,11 @@ export default async function NewQuestionnairePage({
       <h1 className="mt-2 text-3xl">New questionnaire</h1>
       <p className="mt-2 max-w-2xl text-muted">
         Add questions in the order participants should see them. After you save,
-        you get a unique invite link.
+        you get a unique invite link. Pressing Enter in a field will not submit
+        the form — use the create button when you are done.
       </p>
       <div className="mt-6">
-        <QuestionBuilder action={action} />
+        <QuestionBuilder projectId={project.id} />
       </div>
     </div>
   );

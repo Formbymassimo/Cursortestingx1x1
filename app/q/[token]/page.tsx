@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
-import { submitResponseAction } from "@/app/actions/responses";
+import Link from "next/link";
 import { PublicQuestionnaireForm } from "@/components/PublicQuestionnaireForm";
+import { buttonClass, Card } from "@/components/ui";
 import { getPublicQuestionnaire } from "@/lib/services/questionnaires";
 
 export default async function PublicQuestionnairePage({
@@ -10,9 +10,22 @@ export default async function PublicQuestionnairePage({
 }) {
   const { token } = await params;
   const questionnaire = await getPublicQuestionnaire(token);
-  if (!questionnaire) notFound();
-
-  const action = submitResponseAction.bind(null, token);
+  if (!questionnaire) {
+    return (
+      <main className="mx-auto max-w-md px-4 py-16">
+        <Card>
+          <h1 className="text-3xl">Invite link not found</h1>
+          <p className="mt-3 text-muted">
+            This questionnaire link is invalid or no longer available. Ask the
+            researcher for a new invite link.
+          </p>
+          <Link href="/" className={`${buttonClass("primary")} mt-6`}>
+            Back to Fieldbook
+          </Link>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-full">
@@ -25,10 +38,11 @@ export default async function PublicQuestionnairePage({
       <main className="mx-auto max-w-2xl px-4 py-8">
         <p className="mb-6 text-sm leading-6 text-muted">
           This form is for a research study. You do not need an account. Required
-          questions are marked with an asterisk.
+          questions are marked with an asterisk. Pressing Enter will not submit
+          the form — use the submit button when you are finished.
         </p>
         <PublicQuestionnaireForm
-          action={action}
+          token={token}
           questions={questionnaire.questions}
         />
       </main>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState } from "react";
+import { submitResponseAction } from "@/app/actions/responses";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ErrorBanner, Input, Label, Textarea } from "@/components/ui";
-import type { ActionState } from "@/lib/form";
+import { preventEnterSubmit } from "@/lib/form-events";
 import { parseOptions } from "@/lib/question-types";
 
 type PublicQuestion = {
@@ -15,17 +16,18 @@ type PublicQuestion = {
 };
 
 export function PublicQuestionnaireForm({
-  action,
+  token,
   questions,
 }: {
-  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
+  token: string;
   questions: PublicQuestion[];
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const [state, formAction] = useActionState(submitResponseAction, undefined);
 
   return (
-    <form action={formAction} className="space-y-8">
+    <form action={formAction} onKeyDown={preventEnterSubmit} className="space-y-8">
       <ErrorBanner message={state?.error} />
+      <input type="hidden" name="token" value={token} />
 
       <fieldset className="space-y-4 rounded-2xl border border-line bg-card p-5">
         <legend className="px-1 text-sm font-medium text-stone-800">

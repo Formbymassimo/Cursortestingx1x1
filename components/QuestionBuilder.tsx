@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { createQuestionnaireAction } from "@/app/actions/questionnaires";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Button, ErrorBanner, Input, Label, Select, Textarea } from "@/components/ui";
-import type { ActionState } from "@/lib/form";
+import { preventEnterSubmit } from "@/lib/form-events";
 import {
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES,
@@ -29,12 +30,8 @@ function newQuestion(): DraftQuestion {
   };
 }
 
-export function QuestionBuilder({
-  action,
-}: {
-  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
-}) {
-  const [state, formAction] = useActionState(action, undefined);
+export function QuestionBuilder({ projectId }: { projectId: string }) {
+  const [state, formAction] = useActionState(createQuestionnaireAction, undefined);
   const [title, setTitle] = useState("");
   const [questions, setQuestions] = useState<DraftQuestion[]>([newQuestion()]);
 
@@ -72,8 +69,9 @@ export function QuestionBuilder({
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} onKeyDown={preventEnterSubmit} className="space-y-6">
       <ErrorBanner message={state?.error} />
+      <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="questions" value={payload} />
       <div>
         <Label htmlFor="title">Questionnaire title</Label>

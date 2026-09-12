@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Card } from "@/components/ui";
 import { getPublicQuestionnaire } from "@/lib/services/questionnaires";
 
@@ -10,7 +9,18 @@ export default async function ThanksPage({
 }) {
   const { token } = await params;
   const questionnaire = await getPublicQuestionnaire(token);
-  if (!questionnaire) notFound();
+  if (!questionnaire) {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <Card>
+          <h1 className="text-3xl">Invite link not found</h1>
+          <p className="mt-3 text-muted">
+            This questionnaire link is invalid or no longer available.
+          </p>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-full">

@@ -11,10 +11,10 @@ import {
 import { participantSchema } from "@/lib/validation";
 
 export async function submitResponseAction(
-  token: string,
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  const token = field(formData, "token");
   const questionnaire = await getPublicQuestionnaire(token);
   if (!questionnaire) return { error: "This questionnaire is no longer available." };
 
