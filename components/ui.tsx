@@ -78,9 +78,12 @@ export function buttonClass(variant: ButtonProps["variant"] = "primary") {
 export function Button({
   className = "",
   variant = "primary",
+  type = "button",
   ...props
 }: ButtonProps) {
-  return <button className={`${buttonClass(variant)} ${className}`} {...props} />;
+  return (
+    <button type={type} className={`${buttonClass(variant)} ${className}`} {...props} />
+  );
 }
 
 export function ErrorBanner({ message }: { message?: string }) {

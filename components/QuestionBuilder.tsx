@@ -4,7 +4,6 @@ import { useActionState, useMemo, useState } from "react";
 import { createQuestionnaireAction } from "@/app/actions/questionnaires";
 import { SubmitButton } from "@/components/SubmitButton";
 import { Button, ErrorBanner, Input, Label, Select, Textarea } from "@/components/ui";
-import { preventEnterSubmit } from "@/lib/form-events";
 import {
   QUESTION_TYPE_LABELS,
   QUESTION_TYPES,
@@ -20,9 +19,12 @@ type DraftQuestion = {
   options: string[];
 };
 
+let nextDraftId = 1;
+
 function newQuestion(): DraftQuestion {
+  nextDraftId += 1;
   return {
-    key: crypto.randomUUID(),
+    key: `question-${nextDraftId}`,
     prompt: "",
     type: "SHORT_TEXT",
     required: true,
@@ -69,18 +71,14 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
   }
 
   return (
-    <form action={formAction} onKeyDown={preventEnterSubmit} className="space-y-6">
+    <div className="space-y-6">
       <ErrorBanner message={state?.error} />
-      <input type="hidden" name="projectId" value={projectId} />
-      <input type="hidden" name="questions" value={payload} />
       <div>
         <Label htmlFor="title">Questionnaire title</Label>
         <Input
           id="title"
-          name="title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          required
           maxLength={200}
           placeholder="Weekday lunch habits"
         />
@@ -92,14 +90,13 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-medium text-muted">Question {index + 1}</h2>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="ghost" onClick={() => move(index, -1)}>
+                <Button variant="ghost" onClick={() => move(index, -1)}>
                   Move up
                 </Button>
-                <Button type="button" variant="ghost" onClick={() => move(index, 1)}>
+                <Button variant="ghost" onClick={() => move(index, 1)}>
                   Move down
                 </Button>
                 <Button
-                  type="button"
                   variant="ghost"
                   onClick={() =>
                     setQuestions((current) =>
@@ -122,7 +119,6 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
                   value={question.prompt}
                   onChange={(event) => update(question.key, { prompt: event.target.value })}
                   rows={2}
-                  required
                 />
               </div>
               <div className="space-y-3">
@@ -147,7 +143,7 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
                     type="checkbox"
                     checked={question.required}
                     onChange={(event) =>
-                      update(question.key, { required: event.target.checked })
+                      update(question.key, { required: event.currentTarget.checked })
                     }
                   />
                   Required
@@ -173,7 +169,6 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
                         }}
                       />
                       <Button
-                        type="button"
                         variant="ghost"
                         onClick={() =>
                           update(question.key, {
@@ -190,7 +185,6 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
                   ))}
                 </div>
                 <Button
-                  type="button"
                   variant="secondary"
                   className="mt-3"
                   onClick={() =>
@@ -207,14 +201,18 @@ export function QuestionBuilder({ projectId }: { projectId: string }) {
 
       <div className="flex flex-wrap gap-3">
         <Button
-          type="button"
           variant="secondary"
           onClick={() => setQuestions((current) => [...current, newQuestion()])}
         >
           Add question
         </Button>
-        <SubmitButton pendingLabel="Creating…">Create questionnaire</SubmitButton>
+        <form action={formAction}>
+          <input type="hidden" name="projectId" value={projectId} />
+          <input type="hidden" name="title" value={title} />
+          <input type="hidden" name="questions" value={payload} />
+          <SubmitButton pendingLabel="Creating…">Create questionnaire</SubmitButton>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }
