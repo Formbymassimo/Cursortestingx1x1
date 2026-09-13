@@ -30,16 +30,18 @@ export async function createContactAction(
   const parsed = contactFields(formData);
   if (!parsed.success) return { error: firstIssue(parsed.error) };
 
+  let contact;
   try {
-    const contact = await createContact(user.id, {
+    contact = await createContact(user.id, {
       ...parsed.data,
       tags: tagsFromForm(parsed.data.tags ?? ""),
     });
-    revalidatePath("/contacts");
-    redirect(`/contacts/${contact.id}`);
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Could not save contact." };
   }
+
+  revalidatePath("/contacts");
+  redirect(`/contacts/${contact.id}`);
 }
 
 export async function updateContactAction(
