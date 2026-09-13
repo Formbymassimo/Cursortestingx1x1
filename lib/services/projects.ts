@@ -34,6 +34,16 @@ export async function getProjectForUser(projectId: string, ownerId: string) {
           _count: { select: { questions: true, responses: true } },
         },
       },
+      contactLinks: {
+        orderBy: { updatedAt: "desc" },
+        include: { contact: true },
+      },
+      googleForms: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          responses: { orderBy: { submittedAt: "desc" }, take: 50 },
+        },
+      },
     },
   });
 }

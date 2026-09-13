@@ -13,7 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "node scripts/prisma.mjs db push --force-reset && tsx prisma/seed.ts",
     "postinstall": "node scripts/prisma.mjs generate",
-    "test": "tsx --test lib/validation.test.ts lib/question-types.test.ts"
+    "test": "tsx --test lib/validation.test.ts lib/question-types.test.ts lib/tags.test.ts lib/google-form-url.test.ts lib/database-url.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -22,6 +22,7 @@
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "resend": "^6.28.0",
     "zod": "^4.6.2"
   },
   "devDependencies": {

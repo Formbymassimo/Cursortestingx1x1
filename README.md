@@ -1,24 +1,27 @@
 # Fieldbook
 
-A week-1 research tool. A researcher can create an account, start a project, write a questionnaire, copy an invite link, and read participant answers.
+A research workspace. A researcher can create an account, start a project, write a questionnaire, keep contact cards, email invite links, link a Google Form, and read answers.
 
-This first version does **not** include Google Forms, contact-card CRM, tagging, consent workflows beyond a public-form blurb, or sending invite emails. Copying the link is enough.
+This version does **not** include a GDPR / consent-centre panel. The public questionnaire still tells people that answers will be used for research.
 
 ## What you can do
 
 1. Create a researcher account with email and password.
 2. Create a project (name + optional description).
 3. Create a questionnaire with ordered questions: short text, long text, single choice, multiple choice.
-4. Copy a unique invite link. Participants do not sign in.
-5. Participants can optionally leave a name and email, then submit answers.
-6. The researcher sees responses in a table, plus project-level response counts.
+4. Keep a contact directory (name, email, phone, notes, tags).
+5. When someone leaves a name or email on a response, Fieldbook upserts a contact card (matched on email when present) and links them to the project as **responded**.
+6. Attach existing contacts to a project as **invited**, then email them the fill link from a questionnaire.
+7. Copy a unique invite link. Participants do not sign in.
+8. Optionally connect Google and link an existing Google Form to a project. Participants open the Form’s public URL.
+9. Review Fieldbook responses, and optionally sync Google Form responses onto the project page.
 
 ## Requirements
 
 - Node.js 20 or newer
 - npm (comes with Node)
 
-You do **not** need Postgres, Docker, or a cloud account to try this on your computer. Local demo mode uses a SQLite file.
+You do **not** need Postgres, Docker, Resend, or Google to try the core app on your computer. Local demo mode uses a SQLite file named `dev.db` in this project folder. Email and Google stay optional and fail with a clear message if the keys are missing.
 
 ## Run it on your computer (demo mode)
 
@@ -37,7 +40,7 @@ Then open [http://localhost:3000](http://localhost:3000).
 - Email: `researcher@fieldbook.test`
 - Password: `fieldbook-demo`
 
-That account already has a sample project, questionnaire, and one response. You can also register a new account from the site.
+That account already has a sample project, questionnaire, one response, and demo contacts (including Jordan Lee from the sample response). You can also register a new account from the site.
 
 To reset the local demo database and seed it again:
 
@@ -48,13 +51,15 @@ npm run db:reset
 ## Walk through the product
 
 1. Sign in as the demo researcher, or create your own account.
-2. Open **Projects**, then create a project (or open **Campus dining study**).
-3. Create a questionnaire and add a few questions.
-4. On the questionnaire page, copy the invite link.
-5. Open that link in a private window (or another browser) and submit answers as a participant. The form tells people that answers will be used for research.
-6. Back in the researcher account, open **View responses**.
+2. Open **Projects**, then open **Campus dining study** or create a project.
+3. Open **Contacts**. Search, open a card, and add your own contact.
+4. On a project, attach existing contacts (this marks them invited).
+5. Create or open a questionnaire, copy the invite link, or email selected contacts / extra addresses.
+6. Open that link in a private window and submit answers as a participant. If you leave a name or email, a contact card is created or updated.
+7. Back in the researcher account, open **View responses** and the contact card.
+8. Optional: in **Settings**, connect Google, then link a Form on the project page.
 
-Email sending is intentionally not wired up. If you want to invite people, paste the link into your own email.
+If email keys are not set, sending shows a clear error. The copy-link button still works. Fieldbook never pretends an email was sent.
 
 ## Environment variables
 
@@ -64,13 +69,51 @@ Copy `.env.example` to `.env` (the setup script does this for you).
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Local demo: `file:./dev.db`. Production: a Postgres URL from Neon, Supabase, or Vercel Postgres. |
 | `AUTH_SECRET` | Yes in production | A long random string used to sign login cookies. Change this before you deploy. |
-| `NEXT_PUBLIC_APP_URL` | Optional | Public site URL used when building invite links, for example `https://your-app.vercel.app`. If you leave it blank, Fieldbook uses the current request host. |
+| `NEXT_PUBLIC_APP_URL` | Optional | Public site URL used for invite links and the Google redirect, for example `https://your-app.vercel.app`. |
+| `RESEND_API_KEY` | Only for email | API key from [Resend](https://resend.com). Leave blank locally if you do not want to send mail. |
+| `EMAIL_FROM` | Only for email | From address Resend will accept, such as `Fieldbook <studies@your-domain.com>`. |
+| `GOOGLE_CLIENT_ID` | Only for Google Forms | OAuth client ID from Google Cloud. |
+| `GOOGLE_CLIENT_SECRET` | Only for Google Forms | OAuth client secret from Google Cloud. |
 
 Create a production secret with:
 
 ```bash
 openssl rand -base64 32
 ```
+
+## Send invite emails with Resend
+
+Email is optional. Without these variables, the send buttons explain what is missing.
+
+1. Create a free account at [Resend](https://resend.com).
+2. Add and verify a sending domain (Resend’s dashboard walks through DNS). For first tests, Resend also documents a limited test sender.
+3. Create an API key.
+4. In `.env` or Vercel environment variables, set:
+   - `RESEND_API_KEY` = the key
+   - `EMAIL_FROM` = an address on your verified domain, for example `Fieldbook <studies@your-domain.com>`
+5. Restart the app. Open a questionnaire, select contacts or type emails, and send.
+
+The email includes the project name, questionnaire title, the fill link, and a line that answers will be used for research.
+
+## Connect Google Forms
+
+Google is optional. Without these variables, Settings and the project page explain the setup instead of crashing.
+
+1. Open [Google Cloud Console](https://console.cloud.google.com) and create a project (or pick one).
+2. Enable **Google Forms API** and **Google Drive API**.
+3. Go to **APIs & Services → OAuth consent screen**. Choose External (or Internal on a Workspace account). Add your email as a test user while the app is in testing.
+4. Go to **APIs & Services → Credentials → Create credentials → OAuth client ID**. Application type: **Web application**.
+5. Add an authorized redirect URI:
+   - Local: `http://localhost:3000/api/google/callback`
+   - Production: `https://your-app.vercel.app/api/google/callback`
+6. Copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+7. Set `NEXT_PUBLIC_APP_URL` to the same site you used in the redirect URI.
+8. Restart the app, open **Settings**, and click **Connect Google**.
+9. On a project, paste the Form **edit** URL (the one that contains `/edit`) or pick a form from the list. Participants are sent to the public fill link. That is more reliable than embedding.
+
+A published `/forms/d/e/.../viewform` link is not enough for the API. Use the edit URL or the picker.
+
+**Sync responses** pulls answers from Google into a table on the project page. It does not turn them into Fieldbook questionnaire rows.
 
 ## Real Postgres (optional locally, required to deploy)
 
@@ -125,8 +168,11 @@ and run `npm run db:push` and `npm run db:seed`.
    - `DATABASE_URL` = the Postgres URL
    - `AUTH_SECRET` = the random string you generated
    - `NEXT_PUBLIC_APP_URL` = `https://your-app.vercel.app` (or your custom domain)
-5. Deploy. The build command generates the database client and applies the schema with `prisma db push`.
-6. After the first deploy, either register a new researcher in the live app, or run the seed against production from your computer:
+   - Optional: `RESEND_API_KEY`, `EMAIL_FROM`
+   - Optional: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+5. If you use Google, add the Vercel `/api/google/callback` URL to the OAuth client.
+6. Deploy. The build command generates the database client and applies the schema with `prisma db push`.
+7. After the first deploy, either register a new researcher in the live app, or run the seed against production from your computer:
 
 ```bash
 DATABASE_URL="your-production-postgres-url" npm run db:seed
@@ -148,15 +194,14 @@ Do not use the SQLite `file:./dev.db` value on Vercel.
 
 ## Project layout
 
-- `app/(app)` — signed-in researcher pages
+- `app/(app)` — signed-in researcher pages (projects, contacts, settings)
 - `app/q/[token]` — public participant form
+- `app/api/google` — Google OAuth start and callback
 - `app/actions` — form submissions
 - `prisma/schema.prisma` — data model
-- `prisma/seed.ts` — demo researcher and sample study
+- `prisma/seed.ts` — demo researcher, sample study, and demo contacts
 
 ## Out of scope for this version
 
-- Google Forms import or sync
-- Contact cards, tags, or follow-up workflows
-- Sending invite or magic-link emails
+- GDPR / consent-centre workflows beyond the public-form research blurb
 - Design-system kits beyond a clean, accessible layout

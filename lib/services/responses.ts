@@ -65,6 +65,7 @@ export async function submitResponse(input: {
   questionnaireId: string;
   participantName?: string;
   participantEmail?: string;
+  contactId?: string | null;
   questions: {
     id: string;
     type: string;
@@ -77,6 +78,7 @@ export async function submitResponse(input: {
       questionnaireId: input.questionnaireId,
       participantName: input.participantName || null,
       participantEmail: input.participantEmail || null,
+      contactId: input.contactId ?? null,
       answers: {
         create: input.questions.map((question) => {
           const raw = input.answers[question.id];

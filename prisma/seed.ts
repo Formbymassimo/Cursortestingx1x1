@@ -1,13 +1,17 @@
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { resolveDatabaseUrl } from "../lib/database-url";
+import { upsertContactFromResponse } from "../lib/services/contacts";
 import { createInviteToken } from "../lib/services/questionnaires";
 
 if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasourceUrl: resolveDatabaseUrl(),
+});
 
 const DEMO_EMAIL = "researcher@fieldbook.test";
 const DEMO_PASSWORD = "fieldbook-demo";
@@ -30,6 +34,7 @@ async function main() {
   });
 
   if (existing) {
+    await backfillDemoContacts(user.id, existing.id);
     console.log("Demo data already exists.");
     console.log(`  Email: ${DEMO_EMAIL}`);
     console.log(`  Password: ${DEMO_PASSWORD}`);
@@ -118,10 +123,54 @@ async function main() {
     },
   });
 
+  await backfillDemoContacts(user.id, project.id);
+
   console.log("Seeded demo researcher and sample study.");
   console.log(`  Email: ${DEMO_EMAIL}`);
   console.log(`  Password: ${DEMO_PASSWORD}`);
   console.log(`  Invite path: /q/${questionnaire.inviteToken}`);
+}
+
+async function backfillDemoContacts(ownerId: string, projectId: string) {
+  const response = await prisma.response.findFirst({
+    where: {
+      questionnaire: { projectId },
+      participantEmail: "jordan.lee@example.com",
+    },
+  });
+  if (response) {
+    const contact = await upsertContactFromResponse({
+      ownerId,
+      projectId,
+      name: response.participantName,
+      email: response.participantEmail,
+    });
+    if (contact && !response.contactId) {
+      await prisma.response.update({
+        where: { id: response.id },
+        data: { contactId: contact.id },
+      });
+    }
+  }
+
+  const extra = await prisma.contact.findFirst({
+    where: { ownerId, email: "sam.nguyen@example.com" },
+  });
+  if (!extra) {
+    await prisma.contact.create({
+      data: {
+        ownerId,
+        name: "Sam Nguyen",
+        email: "sam.nguyen@example.com",
+        phone: "555-0100",
+        notes: "Demo contact you can pick for invites.",
+        tagsJson: JSON.stringify(["student", "demo"]),
+        projectLinks: {
+          create: { projectId, invitedAt: new Date() },
+        },
+      },
+    });
+  }
 }
 
 main()

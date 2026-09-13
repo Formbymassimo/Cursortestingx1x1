@@ -83,7 +83,18 @@ export default async function ResponsesPage({
                       <td className="whitespace-nowrap px-4 py-3 text-muted">
                         {response.createdAt.toLocaleString()}
                       </td>
-                      <td className="px-4 py-3">{response.participantName || "—"}</td>
+                      <td className="px-4 py-3">
+                        {response.contact ? (
+                          <Link
+                            href={`/contacts/${response.contact.id}`}
+                            className="underline"
+                          >
+                            {response.participantName || response.contact.name}
+                          </Link>
+                        ) : (
+                          response.participantName || "—"
+                        )}
+                      </td>
                       <td className="px-4 py-3">{response.participantEmail || "—"}</td>
                       {answers.map((answer) => (
                         <td key={answer.questionId} className="max-w-xs px-4 py-3">

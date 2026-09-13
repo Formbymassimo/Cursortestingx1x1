@@ -8,23 +8,27 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime  @default(now())
-  projects     Project[]
+  id             String          @id @default(cuid())
+  email          String          @unique
+  passwordHash   String
+  name           String
+  createdAt      DateTime        @default(now())
+  projects       Project[]
+  contacts       Contact[]
+  googleAccount  GoogleAccount?
 }
 
 model Project {
-  id             String          @id @default(cuid())
-  name           String
-  description    String?
-  ownerId        String
-  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  questionnaires Questionnaire[]
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  ownerId         String
+  owner           User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  questionnaires  Questionnaire[]
+  contactLinks    ContactProject[]
+  googleForms      LinkedGoogleForm[]
 
   @@index([ownerId])
 }
@@ -39,6 +43,7 @@ model Questionnaire {
   updatedAt   DateTime   @updatedAt
   questions   Question[]
   responses   Response[]
+  invites     Invite[]
 
   @@index([projectId])
 }
@@ -63,10 +68,13 @@ model Response {
   questionnaire    Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
   participantName  String?
   participantEmail String?
+  contactId        String?
+  contact          Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   createdAt        DateTime      @default(now())
   answers          Answer[]
 
   @@index([questionnaireId])
+  @@index([contactId])
 }
 
 model Answer {
@@ -79,4 +87,91 @@ model Answer {
 
   @@index([responseId])
   @@index([questionId])
+}
+
+model Contact {
+  id           String           @id @default(cuid())
+  ownerId      String
+  owner        User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String
+  email        String?
+  phone        String?
+  notes        String?
+  tagsJson     String           @default("[]")
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  projectLinks ContactProject[]
+  responses    Response[]
+  invites      Invite[]
+
+  @@index([ownerId])
+  @@index([ownerId, email])
+}
+
+model ContactProject {
+  id          String    @id @default(cuid())
+  contactId   String
+  projectId   String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  invitedAt   DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([contactId, projectId])
+}
+
+model Invite {
+  id              String        @id @default(cuid())
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  email           String
+  contactId       String?
+  contact         Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  sentAt          DateTime      @default(now())
+  lastSentAt      DateTime      @default(now())
+  sendCount       Int           @default(1)
+
+  @@index([questionnaireId])
+  @@index([email])
+}
+
+model GoogleAccount {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email        String?
+  refreshToken String
+  accessToken  String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model LinkedGoogleForm {
+  id        String                @id @default(cuid())
+  projectId String
+  project   Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  formId    String
+  title     String
+  url       String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  responses GoogleFormResponse[]
+
+  @@unique([projectId, formId])
+}
+
+model GoogleFormResponse {
+  id                String           @id @default(cuid())
+  linkedFormId      String
+  linkedForm        LinkedGoogleForm @relation(fields: [linkedFormId], references: [id], onDelete: Cascade)
+  googleResponseId  String
+  respondentEmail   String?
+  answersJson       String           @default("[]")
+  submittedAt       DateTime?
+  createdAt         DateTime         @default(now())
+
+  @@unique([linkedFormId, googleResponseId])
 }

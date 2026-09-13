@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { resendInviteAction, sendInvitesAction } from "@/app/actions/invites";
+import { ActionMessageForm } from "@/components/ActionMessageForm";
 import { CopyButton } from "@/components/CopyButton";
+import { InviteForm } from "@/components/InviteForm";
 import { buttonClass, Card } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { emailConfigured, emailSetupMessage } from "@/lib/email";
 import {
   QUESTION_TYPE_LABELS,
   isQuestionType,
   parseOptions,
 } from "@/lib/question-types";
+import { listContactsForUser } from "@/lib/services/contacts";
+import { listInvitesForQuestionnaire } from "@/lib/services/invites";
 import { getQuestionnaireForUser } from "@/lib/services/questionnaires";
 import { inviteUrl } from "@/lib/urls";
 
@@ -22,6 +28,9 @@ export default async function QuestionnairePage({
   if (!questionnaire) notFound();
 
   const link = await inviteUrl(questionnaire.inviteToken);
+  const contacts = await listContactsForUser(user.id);
+  const invites = await listInvitesForQuestionnaire(questionnaire.id, user.id);
+  const sendAction = sendInvitesAction.bind(null, questionnaire.id);
 
   return (
     <div>
@@ -54,8 +63,8 @@ export default async function QuestionnairePage({
       <Card className="mt-8">
         <h2 className="text-lg">Invite link</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Anyone with this link can answer without signing in. Week 1 does not
-          send email invites — copy the link and share it yourself.
+          Anyone with this link can answer without signing in. Copy it, or email
+          it to contacts below.
         </p>
         <p className="mt-3 break-all rounded-lg bg-stone-100 px-3 py-2 font-mono text-sm">
           {link}
@@ -71,6 +80,56 @@ export default async function QuestionnairePage({
           </Link>
         </div>
       </Card>
+
+      <Card className="mt-6">
+        <h2 className="text-lg">Email invites</h2>
+        <p className="mt-2 mb-4 text-sm leading-6 text-muted">
+          Select saved contacts and/or type extra addresses. Each send is stored
+          so you can resend later.
+        </p>
+        <InviteForm
+          contacts={contacts}
+          action={sendAction}
+          emailReady={emailConfigured()}
+          setupMessage={emailSetupMessage()}
+        />
+      </Card>
+
+      {invites.length > 0 ? (
+        <Card className="mt-6">
+          <h2 className="text-lg">Sent invites</h2>
+          <ul className="mt-4 divide-y divide-line">
+            {invites.map((invite) => (
+              <li
+                key={invite.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+              >
+                <div>
+                  <p className="font-medium">
+                    {invite.contact ? (
+                      <Link href={`/contacts/${invite.contact.id}`} className="underline">
+                        {invite.contact.name}
+                      </Link>
+                    ) : (
+                      invite.email
+                    )}
+                  </p>
+                  <p className="text-muted">
+                    {invite.email} · sent {invite.sendCount}{" "}
+                    {invite.sendCount === 1 ? "time" : "times"} · last{" "}
+                    {invite.lastSentAt.toLocaleString()}
+                  </p>
+                </div>
+                <ActionMessageForm
+                  action={resendInviteAction.bind(null, questionnaire.id, invite.id)}
+                  label="Resend"
+                  pendingLabel="Sending…"
+                />
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <h2 className="mt-10 text-xl">Questions</h2>
       <ol className="mt-4 space-y-3">

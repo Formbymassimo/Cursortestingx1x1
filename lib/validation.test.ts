@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  contactSchema,
   participantSchema,
   projectSchema,
   questionnaireDraftSchema,
@@ -41,6 +42,17 @@ test("participant consent is required", () => {
     participantName: "Jordan",
     participantEmail: "jordan@example.com",
     consent: "",
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("contact schema requires a name", () => {
+  const parsed = contactSchema.safeParse({
+    name: "",
+    email: "a@example.com",
+    phone: "",
+    notes: "",
+    tags: "",
   });
   assert.equal(parsed.success, false);
 });
