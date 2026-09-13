@@ -13,10 +13,19 @@ export function AppHeader({
         <Link href={user ? "/projects" : "/"} className="serif text-xl tracking-tight">
           Fieldbook
         </Link>
-        <nav className="flex items-center gap-3 text-sm">
+        <nav className="flex items-center gap-2 text-sm sm:gap-3">
           {user ? (
             <>
-              <span className="hidden text-muted sm:inline">{user.email}</span>
+              <Link href="/projects" className={buttonClass("ghost")}>
+                Projects
+              </Link>
+              <Link href="/contacts" className={buttonClass("ghost")}>
+                Contacts
+              </Link>
+              <Link href="/settings" className={buttonClass("ghost")}>
+                Settings
+              </Link>
+              <span className="hidden text-muted lg:inline">{user.email}</span>
               <form action={logoutAction}>
                 <button type="submit" className={buttonClass("ghost")}>
                   Sign out

@@ -11,15 +11,15 @@ export default async function HomePage() {
       <AppHeader user={user} />
       <main className="mx-auto max-w-5xl px-4 py-16">
         <p className="text-sm font-medium uppercase tracking-[0.16em] text-accent">
-          Week-1 research tool
+          Research workspace
         </p>
         <h1 className="mt-3 max-w-2xl text-4xl leading-tight text-stone-950 sm:text-5xl">
           Create a questionnaire, share a link, and see the answers.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-7 text-muted">
           Fieldbook is a small researcher workspace. Sign in, start a project,
-          write questions, copy an invite link, and review responses. No email
-          sending and no extra CRM features in this first version.
+          write questions, keep contact cards, email invite links, and optionally
+          link a Google Form.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           {user ? (
@@ -49,7 +49,8 @@ export default async function HomePage() {
           <Card>
             <h2 className="text-lg">2. Share</h2>
             <p className="mt-2 text-sm leading-6 text-muted">
-              Copy a unique invite link. Participants do not need an account.
+              Copy a unique invite link or email it to saved contacts. Participants
+              do not need an account.
             </p>
           </Card>
           <Card>

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { field, firstIssue, type ActionState } from "@/lib/form";
+import { upsertContactFromResponse } from "@/lib/services/contacts";
 import { getPublicQuestionnaire } from "@/lib/services/questionnaires";
 import {
   collectAnswers,
@@ -32,10 +33,18 @@ export async function submitResponseAction(
   const answerError = validateAnswers(questionnaire.questions, answers);
   if (answerError) return { error: answerError };
 
+  const contact = await upsertContactFromResponse({
+    ownerId: questionnaire.project.ownerId,
+    projectId: questionnaire.project.id,
+    name: participant.data.participantName,
+    email: participant.data.participantEmail,
+  });
+
   await submitResponse({
     questionnaireId: questionnaire.id,
     participantName: participant.data.participantName,
     participantEmail: participant.data.participantEmail,
+    contactId: contact?.id,
     questions: questionnaire.questions,
     answers,
   });

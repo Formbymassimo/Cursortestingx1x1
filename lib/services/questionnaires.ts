@@ -59,7 +59,7 @@ export async function getPublicQuestionnaire(token: string) {
   return prisma.questionnaire.findUnique({
     where: { inviteToken: token },
     include: {
-      project: { select: { name: true } },
+      project: { select: { id: true, name: true, ownerId: true } },
       questions: { orderBy: { sortOrder: "asc" } },
     },
   });
@@ -76,7 +76,7 @@ export async function getQuestionnaireResponses(
       questions: { orderBy: { sortOrder: "asc" } },
       responses: {
         orderBy: { createdAt: "desc" },
-        include: { answers: true },
+        include: { answers: true, contact: { select: { id: true, name: true } } },
       },
     },
   });
