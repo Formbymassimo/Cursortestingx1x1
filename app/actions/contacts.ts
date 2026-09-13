@@ -77,8 +77,14 @@ export async function attachContactsToProjectAction(
   const contactIds = formData.getAll("contactId").filter((value): value is string => typeof value === "string");
   if (contactIds.length === 0) return { error: "Select at least one contact." };
 
-  const result = await attachContactsToProject(user.id, projectId, contactIds);
-  if ("error" in result && result.error) return { error: result.error };
+  try {
+    const result = await attachContactsToProject(user.id, projectId, contactIds);
+    if ("error" in result && result.error) return { error: result.error };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Could not add those contacts.",
+    };
+  }
 
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/contacts");

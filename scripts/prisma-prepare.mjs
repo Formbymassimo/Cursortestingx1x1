@@ -10,6 +10,12 @@ if (!process.env.DATABASE_URL) {
 }
 
 const url = process.env.DATABASE_URL;
+if (url.startsWith("file:") && !url.startsWith("file::")) {
+  const raw = url.slice("file:".length);
+  if (!path.isAbsolute(raw)) {
+    process.env.DATABASE_URL = `file:${path.resolve(root, raw)}`;
+  }
+}
 const provider = url.startsWith("postgres") ? "postgresql" : "sqlite";
 const source = fs.readFileSync(sourcePath, "utf8");
 const generated = source.replace(

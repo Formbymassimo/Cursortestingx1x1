@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { resolveDatabaseUrl } from "../lib/database-url";
 import { upsertContactFromResponse } from "../lib/services/contacts";
 import { createInviteToken } from "../lib/services/questionnaires";
 
@@ -8,7 +9,9 @@ if (existsSync(".env")) {
   process.loadEnvFile(".env");
 }
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasourceUrl: resolveDatabaseUrl(),
+});
 
 const DEMO_EMAIL = "researcher@fieldbook.test";
 const DEMO_PASSWORD = "fieldbook-demo";

@@ -21,7 +21,7 @@ This version does **not** include a GDPR / consent-centre panel. The public ques
 - Node.js 20 or newer
 - npm (comes with Node)
 
-You do **not** need Postgres, Docker, Resend, or Google to try the core app on your computer. Local demo mode uses a SQLite file. Email and Google stay optional and fail with a clear message if the keys are missing.
+You do **not** need Postgres, Docker, Resend, or Google to try the core app on your computer. Local demo mode uses a SQLite file named `dev.db` in this project folder. Email and Google stay optional and fail with a clear message if the keys are missing.
 
 ## Run it on your computer (demo mode)
 
