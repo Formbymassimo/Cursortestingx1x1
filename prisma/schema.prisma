@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  projects     Project[]
+}
+
+model Project {
+  id             String          @id @default(cuid())
+  name           String
+  description    String?
+  ownerId        String
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  questionnaires Questionnaire[]
+
+  @@index([ownerId])
+}
+
+model Questionnaire {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  inviteToken String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  questions   Question[]
+  responses   Response[]
+
+  @@index([projectId])
+}
+
+model Question {
+  id              String        @id @default(cuid())
+  questionnaireId String
+  questionnaire   Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  sortOrder       Int
+  prompt          String
+  type            String
+  optionsJson     String        @default("[]")
+  required        Boolean       @default(true)
+  answers         Answer[]
+
+  @@index([questionnaireId, sortOrder])
+}
+
+model Response {
+  id               String        @id @default(cuid())
+  questionnaireId  String
+  questionnaire    Questionnaire @relation(fields: [questionnaireId], references: [id], onDelete: Cascade)
+  participantName  String?
+  participantEmail String?
+  createdAt        DateTime      @default(now())
+  answers          Answer[]
+
+  @@index([questionnaireId])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  responseId String
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  value      String
+
+  @@index([responseId])
+  @@index([questionId])
+}
