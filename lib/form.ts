@@ -1,4 +1,4 @@
-export type ActionState = { error?: string } | undefined;
+export type ActionState = { error?: string; success?: string } | undefined;
 
 export function field(formData: FormData, name: string) {
   const value = formData.get(name);

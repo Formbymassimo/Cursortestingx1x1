@@ -91,7 +91,21 @@ export function ErrorBanner({ message }: { message?: string }) {
   return (
     <p
       role="alert"
+      aria-live="assertive"
       className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-danger"
+    >
+      {message}
+    </p>
+  );
+}
+
+export function SuccessBanner({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p
+      role="status"
+      aria-live="polite"
+      className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-stone-800"
     >
       {message}
     </p>

@@ -95,6 +95,19 @@ Email is optional. Without these variables, the send buttons explain what is mis
 
 The email includes the project name, questionnaire title, the fill link, and a line that answers will be used for research.
 
+## Email not sending / no Resend logs
+
+If Send does nothing useful, or Resend’s dashboard stays empty, work through this list. Fieldbook never pretends a send succeeded.
+
+1. **Look at the banner on the questionnaire page.** After Send or Resend you should always see a red error or a green “Sent to N address(es).” If you selected nobody and typed no addresses, it asks for a recipient. Copy-link still works either way.
+2. **Check which Vercel environment you are on.** Production and Preview have **separate** env vars. A key set only under Production will not exist on a `*.vercel.app` Preview URL. Set `RESEND_API_KEY` and `EMAIL_FROM` for the environment you are actually using, then redeploy that environment.
+3. **Confirm both names, exactly.** The app tells you which of `RESEND_API_KEY` / `EMAIL_FROM` is missing. Empty or whitespace-only values count as missing. It never prints the secret values.
+4. **EMAIL_FROM must be allowed by Resend.** Use an address on a domain you verified in Resend (or Resend’s documented test sender). A random Gmail “from” address is rejected.
+5. **Read Vercel function logs.** Failed or blocked sends write a JSON line with `"source": "fieldbook.email"`. That log says whether the env was missing, the provider threw, or the provider rejected the message. It does not print API keys.
+6. **A successful send creates a “Sent invites” row.** If there is no green banner and no row, Resend was not treated as successful.
+
+After you add or change env vars, redeploy so the running app picks them up.
+
 ## Connect Google Forms
 
 Google is optional. Without these variables, Settings and the project page explain the setup instead of crashing.
