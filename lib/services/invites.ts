@@ -1,4 +1,4 @@
-import { sendInviteEmail } from "@/lib/email";
+import { parseRecipientEmails, sendInviteEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { markContactProject, normalizeEmail } from "@/lib/services/contacts";
 import { inviteUrl } from "@/lib/urls";
@@ -51,9 +51,14 @@ export async function sendQuestionnaireInvites(input: {
     recipients.push({ email, contactId: contact.id, name: contact.name });
   }
 
-  for (const raw of input.extraEmails) {
-    const email = normalizeEmail(raw);
-    if (!email) continue;
+  const parsedExtras = parseRecipientEmails(input.extraEmails.join(" "));
+  if (parsedExtras.invalid.length > 0) {
+    return {
+      error: `These addresses are not valid: ${parsedExtras.invalid.join(", ")}`,
+    };
+  }
+
+  for (const email of parsedExtras.emails) {
     if (seen.has(email)) continue;
     seen.add(email);
     const existing = await prisma.contact.findFirst({

@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { type FormEvent, useActionState, useState } from "react";
+import { sendInvitesAction } from "@/app/actions/invites";
 import { SubmitButton } from "@/components/SubmitButton";
-import { ErrorBanner, Label, Textarea } from "@/components/ui";
-import type { ActionState } from "@/lib/form";
+import { ErrorBanner, Label, SuccessBanner, Textarea } from "@/components/ui";
 
 type PickerContact = {
   id: string;
@@ -12,26 +12,58 @@ type PickerContact = {
 };
 
 export function InviteForm({
+  questionnaireId,
   contacts,
-  action,
   emailReady,
   setupMessage,
 }: {
+  questionnaireId: string;
   contacts: PickerContact[];
-  action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   emailReady: boolean;
   setupMessage: string;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const [state, formAction] = useActionState(sendInvitesAction, undefined);
+  const [localError, setLocalError] = useState<string | undefined>();
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const selected = form.querySelectorAll<HTMLInputElement>(
+      'input[name="contactId"]:checked',
+    );
+    const extra = String(new FormData(form).get("extraEmails") ?? "").trim();
+    if (selected.length === 0 && extra.length === 0) {
+      event.preventDefault();
+      setLocalError("Add at least one contact or email address.");
+      return;
+    }
+    const tokens = extra.split(/[\s,;]+/).filter(Boolean);
+    const invalid = tokens.filter((token) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(token));
+    if (invalid.length > 0) {
+      event.preventDefault();
+      setLocalError(`These addresses are not valid: ${invalid.join(", ")}`);
+      return;
+    }
+    setLocalError(undefined);
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
-      <ErrorBanner message={state?.error} />
+    <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
+      <input type="hidden" name="questionnaireId" value={questionnaireId} />
+      <div id="email-invite-status" className="space-y-2">
+        <ErrorBanner message={localError ?? state?.error} />
+        <SuccessBanner message={localError ? undefined : state?.success} />
+      </div>
       {!emailReady ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-stone-800">
-          {setupMessage}
+          Email sending is not configured. {setupMessage}
         </p>
-      ) : null}
+      ) : (
+        <p className="text-sm leading-6 text-muted">
+          Sending uses this deployment’s env vars. Vercel Production and Preview
+          are separate — Preview will not send unless Preview also has
+          RESEND_API_KEY and EMAIL_FROM. Copy-link still works without email.
+        </p>
+      )}
       {contacts.length > 0 ? (
         <fieldset>
           <legend className="mb-2 text-sm font-medium text-stone-800">
@@ -73,9 +105,7 @@ export function InviteForm({
           placeholder="one@example.com, two@example.com"
         />
       </div>
-      <SubmitButton pendingLabel="Sending…">
-        Send invite emails
-      </SubmitButton>
+      <SubmitButton pendingLabel="Sending…">Send invite emails</SubmitButton>
     </form>
   );
 }

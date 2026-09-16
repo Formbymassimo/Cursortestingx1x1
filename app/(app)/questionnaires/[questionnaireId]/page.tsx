@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { resendInviteAction, sendInvitesAction } from "@/app/actions/invites";
+import { resendInviteAction } from "@/app/actions/invites";
 import { ActionMessageForm } from "@/components/ActionMessageForm";
 import { CopyButton } from "@/components/CopyButton";
 import { InviteForm } from "@/components/InviteForm";
@@ -30,7 +30,6 @@ export default async function QuestionnairePage({
   const link = await inviteUrl(questionnaire.inviteToken);
   const contacts = await listContactsForUser(user.id);
   const invites = await listInvitesForQuestionnaire(questionnaire.id, user.id);
-  const sendAction = sendInvitesAction.bind(null, questionnaire.id);
 
   return (
     <div>
@@ -88,8 +87,8 @@ export default async function QuestionnairePage({
           so you can resend later.
         </p>
         <InviteForm
+          questionnaireId={questionnaire.id}
           contacts={contacts}
-          action={sendAction}
           emailReady={emailConfigured()}
           setupMessage={emailSetupMessage()}
         />
@@ -121,7 +120,11 @@ export default async function QuestionnairePage({
                   </p>
                 </div>
                 <ActionMessageForm
-                  action={resendInviteAction.bind(null, questionnaire.id, invite.id)}
+                  action={resendInviteAction}
+                  hiddenFields={{
+                    questionnaireId: questionnaire.id,
+                    inviteId: invite.id,
+                  }}
                   label="Resend"
                   pendingLabel="Sending…"
                 />
