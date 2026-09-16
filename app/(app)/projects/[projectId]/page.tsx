@@ -6,11 +6,13 @@ import {
   unlinkGoogleFormAction,
 } from "@/app/actions/google";
 import { attachContactsToProjectAction } from "@/app/actions/contacts";
+import { sendProjectContactInviteAction } from "@/app/actions/invites";
 import { ActionMessageForm } from "@/components/ActionMessageForm";
 import { ContactPicker } from "@/components/ContactPicker";
 import { GoogleFormConnect } from "@/components/GoogleFormConnect";
-import { buttonClass, Card, EmptyState } from "@/components/ui";
+import { buttonClass, Card, EmptyState, Label, Select } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
+import { emailConfigured, emailSetupMessage } from "@/lib/email";
 import { listContactsForUser, relationLabel } from "@/lib/services/contacts";
 import {
   getGoogleAccount,
@@ -19,6 +21,7 @@ import {
   listGoogleForms,
 } from "@/lib/services/google";
 import { getProjectForUser } from "@/lib/services/projects";
+import { pickLatestQuestionnaire } from "@/lib/questionnaires";
 
 export default async function ProjectPage({
   params,
@@ -48,6 +51,8 @@ export default async function ProjectPage({
         error instanceof Error ? error.message : "Could not list Google Forms.";
     }
   }
+
+  const defaultQuestionnaire = pickLatestQuestionnaire(project.questionnaires);
 
   return (
     <div>
@@ -129,22 +134,95 @@ export default async function ProjectPage({
             will appear after they respond.
           </p>
         ) : (
-          <ul className="space-y-2">
-            {project.contactLinks.map((link) => (
-              <li key={link.id} className="flex flex-wrap justify-between gap-2 text-sm">
-                <Link href={`/contacts/${link.contact.id}`} className="underline">
-                  {link.contact.name}
-                </Link>
-                <span className="text-muted">{relationLabel(link)}</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            {project.questionnaires.length === 0 ? (
+              <p className="mb-4 text-sm text-muted">
+                Create a questionnaire on this project before sending invite
+                emails. Copy-link will appear on the questionnaire page.
+              </p>
+            ) : !emailConfigured() ? (
+              <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-stone-800">
+                Email sending is not configured. {emailSetupMessage()}
+              </p>
+            ) : defaultQuestionnaire ? (
+              <p className="mb-4 text-sm text-muted">
+                Invite emails use{" "}
+                <span className="font-medium text-stone-800">
+                  {defaultQuestionnaire.title}
+                </span>
+                {project.questionnaires.length > 1
+                  ? " by default (most recently updated). Pick another below if needed."
+                  : "."}{" "}
+                Copy-link still lives on the questionnaire Invite page.
+              </p>
+            ) : null}
+            <ul className="divide-y divide-line">
+              {project.contactLinks.map((link) => (
+                <li key={link.id} className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2 text-sm">
+                    <div>
+                      <Link href={`/contacts/${link.contact.id}`} className="underline">
+                        {link.contact.name}
+                      </Link>
+                      <p className="mt-0.5 text-muted">
+                        {link.contact.email || "No email"}
+                      </p>
+                    </div>
+                    <span className="text-muted">{relationLabel(link)}</span>
+                  </div>
+                  {!link.contact.email ? (
+                    <p className="text-sm text-muted">
+                      Add an email on the contact card before sending an invite.
+                    </p>
+                  ) : project.questionnaires.length === 0 ? null : (
+                    <ActionMessageForm
+                      action={sendProjectContactInviteAction}
+                      hiddenFields={{
+                        projectId: project.id,
+                        contactId: link.contact.id,
+                        ...(project.questionnaires.length === 1 && defaultQuestionnaire
+                          ? { questionnaireId: defaultQuestionnaire.id }
+                          : {}),
+                      }}
+                      label={link.invitedAt ? "Resend email" : "Send invite email"}
+                      pendingLabel="Sending…"
+                    >
+                      {project.questionnaires.length > 1 ? (
+                        <div>
+                          <Label htmlFor={`questionnaire-${link.id}`} className="sr-only">
+                            Questionnaire
+                          </Label>
+                          <Select
+                            id={`questionnaire-${link.id}`}
+                            name="questionnaireId"
+                            defaultValue={defaultQuestionnaire?.id}
+                          >
+                            {project.questionnaires
+                              .slice()
+                              .sort(
+                                (a, b) =>
+                                  b.updatedAt.getTime() - a.updatedAt.getTime(),
+                              )
+                              .map((questionnaire) => (
+                                <option key={questionnaire.id} value={questionnaire.id}>
+                                  {questionnaire.title}
+                                </option>
+                              ))}
+                          </Select>
+                        </div>
+                      ) : null}
+                    </ActionMessageForm>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
         <div className="mt-6 border-t border-line pt-4">
           <h3 className="text-sm font-medium">Add existing contacts</h3>
           <p className="mt-1 mb-3 text-sm text-muted">
-            This marks them as invited for this project. Sending the email happens
-            on a questionnaire page.
+            This marks them as invited for this project. You can send or resend
+            the invite email from this list, or from a questionnaire page.
           </p>
           <ContactPicker
             contacts={attachable}
