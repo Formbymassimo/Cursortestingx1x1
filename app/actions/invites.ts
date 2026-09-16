@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import {
   emailConfigStatus,
-  emailSetupMessage,
+  emailBlockedMessage,
   logEmailEvent,
   parseRecipientEmails,
 } from "@/lib/email";
@@ -20,7 +20,7 @@ function missingConfigError() {
   logEmailEvent("error", "action_blocked_not_configured", {
     missing: status.missing,
   });
-  return { error: emailSetupMessage() };
+  return { error: emailBlockedMessage() };
 }
 
 export async function sendInvitesAction(

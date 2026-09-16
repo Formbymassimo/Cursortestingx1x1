@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  emailBlockedMessage,
   emailConfigStatus,
-  emailSetupMessage,
   parseRecipientEmails,
 } from "./email";
 
@@ -26,7 +26,8 @@ describe("emailConfigStatus", () => {
   });
 
   it("explains which env var is missing without printing secrets", () => {
-    const message = emailSetupMessage({ RESEND_API_KEY: "re_secret" });
+    const message = emailBlockedMessage({ RESEND_API_KEY: "re_secret" });
+    assert.match(message, /Send was blocked/);
     assert.match(message, /EMAIL_FROM/);
     assert.doesNotMatch(message, /re_secret/);
     assert.match(message, /Production and Preview/);

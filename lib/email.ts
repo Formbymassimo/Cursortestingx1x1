@@ -28,7 +28,11 @@ export function emailSetupMessage(env: NodeJS.Dict<string> = process.env) {
     return "Email sending is configured.";
   }
   const listed = missing.join(" and ");
-  return `Email sending is not configured. This environment is missing ${listed}. In Vercel, Production and Preview have separate env vars — set them for the environment you are using, then redeploy. You can still copy the invite link.`;
+  return `This environment is missing ${listed}. In Vercel, Production and Preview have separate env vars — set them for the environment you are using, then redeploy. You can still copy the invite link.`;
+}
+
+export function emailBlockedMessage(env: NodeJS.Dict<string> = process.env) {
+  return `Send was blocked. ${emailSetupMessage(env)}`;
 }
 
 export function parseRecipientEmails(value: string) {
@@ -86,7 +90,7 @@ export async function sendInviteEmail(input: {
   const apiKey = readEnv("RESEND_API_KEY");
   const from = readEnv("EMAIL_FROM");
   if (!apiKey || !from) {
-    const message = emailSetupMessage();
+    const message = emailBlockedMessage();
     logEmailEvent("error", "not_configured", {
       missing: emailConfigStatus().missing,
     });
