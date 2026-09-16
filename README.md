@@ -53,7 +53,7 @@ npm run db:reset
 1. Sign in as the demo researcher, or create your own account.
 2. Open **Projects**, then open **Campus dining study** or create a project.
 3. Open **Contacts**. Search, open a card, and add your own contact.
-4. On a project, attach existing contacts (this marks them invited).
+4. On a project, attach existing contacts (this marks them invited). Send or resend an invite email from that Contacts list, or from a questionnaire page.
 5. Create or open a questionnaire, copy the invite link, or email selected contacts / extra addresses.
 6. Open that link in a private window and submit answers as a participant. If you leave a name or email, a contact card is created or updated.
 7. Back in the researcher account, open **View responses** and the contact card.

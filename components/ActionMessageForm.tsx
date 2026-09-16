@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, type ReactNode } from "react";
 import { SubmitButton } from "@/components/SubmitButton";
 import { ErrorBanner, SuccessBanner } from "@/components/ui";
 import type { ActionState } from "@/lib/form";
@@ -10,11 +10,13 @@ export function ActionMessageForm({
   label,
   pendingLabel,
   hiddenFields,
+  children,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   label: string;
   pendingLabel?: string;
   hiddenFields?: Record<string, string>;
+  children?: ReactNode;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   return (
@@ -26,6 +28,7 @@ export function ActionMessageForm({
         : null}
       <ErrorBanner message={state?.error} />
       <SuccessBanner message={state?.success} />
+      {children}
       <SubmitButton variant="secondary" pendingLabel={pendingLabel}>
         {label}
       </SubmitButton>

@@ -10,6 +10,8 @@ import {
 } from "@/lib/email";
 import { field, type ActionState } from "@/lib/form";
 import { resendInvite, sendQuestionnaireInvites } from "@/lib/services/invites";
+import { getProjectForUser } from "@/lib/services/projects";
+import { pickLatestQuestionnaire } from "@/lib/questionnaires";
 
 function sentMessage(count: number) {
   return `Sent to ${count} address${count === 1 ? "" : "es"}.`;
@@ -124,6 +126,95 @@ export async function resendInviteAction(
   } catch (error) {
     logEmailEvent("error", "resend_threw", {
       questionnaireId,
+      message: error instanceof Error ? error.message : "unknown",
+    });
+    return {
+      error: error instanceof Error ? error.message : "The invite email could not be sent.",
+    };
+  }
+}
+
+export async function sendProjectContactInviteAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const user = await requireUser();
+  const projectId = field(formData, "projectId");
+  const contactId = field(formData, "contactId");
+  if (!projectId || !contactId) {
+    return { error: "That contact could not be found. Refresh the page and try again." };
+  }
+
+  const project = await getProjectForUser(projectId, user.id);
+  if (!project) return { error: "Project not found." };
+
+  if (project.questionnaires.length === 0) {
+    return {
+      error: "Create a questionnaire on this project before sending invite emails.",
+    };
+  }
+
+  const link = project.contactLinks.find((item) => item.contactId === contactId);
+  if (!link) return { error: "That contact is not on this project." };
+  if (!link.contact.email) {
+    return {
+      error: `${link.contact.name} does not have an email address. Add one on the contact card first.`,
+    };
+  }
+
+  const selectedId = field(formData, "questionnaireId");
+  const questionnaire =
+    project.questionnaires.find((item) => item.id === selectedId) ??
+    pickLatestQuestionnaire(project.questionnaires);
+  if (!questionnaire) {
+    return {
+      error: "Create a questionnaire on this project before sending invite emails.",
+    };
+  }
+
+  if (!emailConfigStatus().ready) return missingConfigError();
+
+  try {
+    const result = await sendQuestionnaireInvites({
+      ownerId: user.id,
+      researcherName: user.name,
+      questionnaireId: questionnaire.id,
+      contactIds: [contactId],
+      extraEmails: [],
+    });
+    if ("error" in result && result.error) {
+      logEmailEvent("error", "project_contact_send_rejected", {
+        projectId,
+        questionnaireId: questionnaire.id,
+        message: result.error,
+      });
+      return { error: result.error };
+    }
+
+    const sent = "sent" in result ? result.sent : 0;
+    if (!sent) {
+      logEmailEvent("error", "project_contact_send_zero", {
+        projectId,
+        questionnaireId: questionnaire.id,
+      });
+      return { error: "No invite emails were sent. Try again, or copy the invite link." };
+    }
+
+    logEmailEvent("info", "project_contact_send_complete", {
+      projectId,
+      questionnaireId: questionnaire.id,
+      sent,
+    });
+    revalidatePath(`/projects/${projectId}`);
+    revalidatePath(`/questionnaires/${questionnaire.id}`);
+    revalidatePath("/contacts");
+    return {
+      success: `${sentMessage(sent)} (${questionnaire.title})`,
+    };
+  } catch (error) {
+    logEmailEvent("error", "project_contact_send_threw", {
+      projectId,
+      questionnaireId: questionnaire.id,
       message: error instanceof Error ? error.message : "unknown",
     });
     return {
