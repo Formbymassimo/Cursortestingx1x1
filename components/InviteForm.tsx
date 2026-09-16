@@ -36,6 +36,13 @@ export function InviteForm({
       setLocalError("Add at least one contact or email address.");
       return;
     }
+    const tokens = extra.split(/[\s,;]+/).filter(Boolean);
+    const invalid = tokens.filter((token) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(token));
+    if (invalid.length > 0) {
+      event.preventDefault();
+      setLocalError(`These addresses are not valid: ${invalid.join(", ")}`);
+      return;
+    }
     setLocalError(undefined);
   }
 
@@ -43,8 +50,8 @@ export function InviteForm({
     <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="questionnaireId" value={questionnaireId} />
       <div id="email-invite-status" className="space-y-2">
-        <ErrorBanner message={state?.error ?? localError} />
-        <SuccessBanner message={state?.success} />
+        <ErrorBanner message={localError ?? state?.error} />
+        <SuccessBanner message={localError ? undefined : state?.success} />
       </div>
       {!emailReady ? (
         <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-stone-800">

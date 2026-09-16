@@ -28,7 +28,6 @@ export async function sendInvitesAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
-  if (!emailConfigStatus().ready) return missingConfigError();
 
   const questionnaireId = field(formData, "questionnaireId");
   if (!questionnaireId) {
@@ -47,6 +46,8 @@ export async function sendInvitesAction(
   if (contactIds.length === 0 && extras.emails.length === 0) {
     return { error: "Add at least one contact or email address." };
   }
+
+  if (!emailConfigStatus().ready) return missingConfigError();
 
   try {
     const result = await sendQuestionnaireInvites({
